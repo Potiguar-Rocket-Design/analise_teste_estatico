@@ -4,7 +4,7 @@ import numpy as np
 def calibrar_curva(data: np.ndarray):
     data[:, 0] = data[:, 0] - data[0, 0]  # corrige tempo 0
 
-    data[:, 1] = data[:, 1] * -4.51e-3 + 37900  # corrige escala de empuxo
+    data[:, 1] = data[:, 1] * -4.51e-3 + 37900  # corrige escala de empuxo  # todo: entrar com constantes de calibração
     data[:, 1] = data[:, 1] - data[0, 1]  # corrige offset de empuxo
 
     return data
