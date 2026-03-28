@@ -16,6 +16,7 @@ st.subheader('Potiguar Rocket Design', divider=True)
 with st.sidebar:
     st.image('analise_de_dados.jpg')
 
+cel = st.selectbox('Selecione a célula de carga', ['Grande', 'Pequena'])
 
 # upload de arquivo
 # -----------------
@@ -73,7 +74,10 @@ with st.expander('Selecione os dados', expanded=True):
 
 # extração de dados
 # -----------------
-data = calibrar_curva(full_data[min_index:max_index, :])
+if cel == 'Pequena':
+    data = calibrar_curva_cel_pequena(full_data[min_index:max_index, :])
+else:
+    data = calibrar_curva_cel_grande(full_data[min_index:max_index, :])
 data_dict = {
     "Variável": [
         "Impulso total",
