@@ -50,7 +50,10 @@ with st.expander('Visualizar arquivo'):
 with st.expander('Selecione os dados', expanded=True):
     st.header('Utilize o botão "Box Select" para selecionar a queima na imagem.')
     st.text('Utilize os botões "Zoom", "Pan" e "Reset Axis" para auxiliar na navegação.')
-    full_fig = px.line(x=full_data[:, 0], y=-full_data[:, 1], markers=True, title=file.name, template='plotly_dark')
+    if cel == 'Pequena':
+        full_fig = px.line(x=full_data[:, 0], y=full_data[:, 1], markers=True, title=file.name, template='plotly_dark')
+    else:
+        full_fig = px.line(x=full_data[:, 0], y=-full_data[:, 1], markers=True, title=file.name, template='plotly_dark')
     full_fig.update_layout(xaxis_title='Tempo', yaxis_title='Empuxo')
 
     selection_event = st.plotly_chart(
