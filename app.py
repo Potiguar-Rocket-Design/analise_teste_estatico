@@ -106,10 +106,45 @@ data_dict = {
 st.header('Dados do teste estático', divider=True)
 name = st.text_input('Nome do teste:', value=file.name)
 
+# curva teórica (opcional)
+# ------------------
+
+ref_file = st.file_uploader(
+    'Curva teórica (opcional)',
+    type=['csv', 'txt', 'wsv'], key='curva_teorica')
+
+ref_data = None
+if ref_file is not None:
+    try:
+        df_ref = formatar_txt(ref_file)
+        if df_ref.shape[1] < 2:
+            raise ValueError('O arquivo deve ter duas colunas.')
+        ref_data = df.ref.iloc[:, :2].to_numpy(dtype=float)
+    except (ValueError, TypeError) as e:
+        st.error(f"Não foi possível ler a curva teórica: {e}")
+        ref_data = None
+
+data_plot = data.copy()
+if ref_data is not None:
+    alinhas = st.checkbox('Alinhas início da curva experimental em t = 0s', value=True)
+    if alinhas:
+        data_plot[:, 0] = data_plot[:, 0] - data_plot[0, 0]
+
 col1, col2 = st.columns([60,40])
 with col1:
-    fig = px.line(x=data[:, 0], y=data[:, 1], markers=True, title=f'Curva de empuxo {name}', template='plotly_dark')
-    fig.update_layout(xaxis_title='Tempo [s]', yaxis_title='Empuxo [N]')
+    fig = px.line(x=data_plot[:, 0], y=data_plot[:, 1], markers=True, title=f'Curva de empuxo {name}', template='plotly_dark')
+    fig.update_traces(name='Experimental', showlegend=True)
+    if ref_data is not None:
+        fig.add_trace(go.Scatter(
+            x=ref_data[:, 0], y=ref_data[:, 1],
+            mode='lines_markers', name='Teórica',
+            line=dict(dash='dash'),
+        ))
+    
+    fig.update_layout(xaxis_title='Tempo [s]', yaxis_title='Empuxo [N]',
+                      legend=dict(orientation='h', 
+                                  yanchor='bottom', y=1.02,
+                                  xanchor='right', x=1))
     st.plotly_chart(fig, config={
         'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'zoomIn', 'zoomOut', 'autoScale'],
         'toImageButtonOptions': {
@@ -139,3 +174,4 @@ with col2:
             theme=None,
     )
     st.text('Clique em "📷 Download plot as a PNG" para realizar download do gráfico ou da tabela.')
+    
