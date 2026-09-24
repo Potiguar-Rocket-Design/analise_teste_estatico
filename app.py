@@ -1,8 +1,8 @@
 import streamlit as st
 from plotly import express as px, figure_factory as ff
-from plotly import graph_objects as go
 import pandas as pd
 import numpy as np
+from plotly import graph_objects as go
 
 from stats import *
 
@@ -109,27 +109,29 @@ st.header('Dados do teste estático', divider=True)
 name = st.text_input('Nome do teste:', value=file.name)
 
 # curva teórica (opcional)
-# ------------------
-
+# ------------------------
 ref_file = st.file_uploader(
-    'Curva teórica (opcional)',
-    type=['csv', 'txt', 'wsv'], key='curva_teorica')
+        'Curva teórica (opcional): `.txt`, `.csv` ou `.wsv` com duas colunas '
+        '(tempo [s] e empuxo [N]) separadas por espaço.',
+        type=['csv', 'txt', 'wsv'], key='curva_teorica')
 
 ref_data = None
 if ref_file is not None:
     try:
-        df_ref = formatar_txt(ref_file)
+        df_ref = formatar_txt(ref_file)  # DataFrame com tempo e valor
         if df_ref.shape[1] < 2:
-            raise ValueError('O arquivo deve ter duas colunas.')
+            raise ValueError('O arquivo precisa ter ao menos duas colunas.')
+        # array [tempo, empuxo], mesmo formato usado nas funções de estatística
         ref_data = df_ref.iloc[:, :2].to_numpy(dtype=float)
     except (ValueError, TypeError) as e:
-        st.error(f"Não foi possível ler a curva teórica: {e}")
+        st.error(f'Não foi possível ler a curva teórica: {e}')
         ref_data = None
 
+# cópia dos dados experimentais para o gráfico (estatísticas usam `data` original)
 data_plot = data.copy()
 if ref_data is not None:
-    alinhas = st.checkbox('Alinhas início da curva experimental em t = 0s', value=True)
-    if alinhas:
+    alinhar = st.checkbox('Alinhar início da curva experimental em t = 0 s', value=True)
+    if alinhar:
         data_plot[:, 0] = data_plot[:, 0] - data_plot[0, 0]
 
 col1, col2 = st.columns([60,40])
@@ -138,15 +140,12 @@ with col1:
     fig.update_traces(name='Experimental', showlegend=True)
     if ref_data is not None:
         fig.add_trace(go.Scatter(
-            x=ref_data[:, 0], y=ref_data[:, 1],
-            mode='lines_markers', name='Teórica',
-            line=dict(dash='dash'),
+                x=ref_data[:, 0], y=ref_data[:, 1],
+                mode='lines+markers', name='Teórica',
+                line=dict(dash='dash'),
         ))
-    
     fig.update_layout(xaxis_title='Tempo [s]', yaxis_title='Empuxo [N]',
-                      legend=dict(orientation='h', 
-                                  yanchor='bottom', y=1.02,
-                                  xanchor='right', x=1))
+                      legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1))
     st.plotly_chart(fig, config={
         'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'zoomIn', 'zoomOut', 'autoScale'],
         'toImageButtonOptions': {
@@ -165,7 +164,7 @@ with col2:
     st.plotly_chart(
             fig_table,
             config={
-                'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'zoom', 'zoomIn', 'zoomOut', 'autoScale'],
+                'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'autoScale'],
                 # 'staticPlot': True,
                 'scrollZoom': False,
                 'toImageButtonOptions': {
@@ -176,4 +175,34 @@ with col2:
             theme=None,
     )
     st.text('Clique em "📷 Download plot as a PNG" para realizar download do gráfico ou da tabela.')
-    
+
+
+# comparação teórico x experimental
+# ---------------------------------
+if ref_data is not None:
+    st.header('Comparação: teórico x experimental', divider=True)
+
+    def _metricas(d):
+        return [
+            impulso_total(d),
+            empuxo_medio(d),
+            empuxo_maximo(d),
+            tempo_queima(d),
+            tempo_pico(d),
+        ]
+
+    nomes = ['Impulso total [Ns]', 'Empuxo médio [N]', 'Empuxo máximo [N]',
+             'Tempo de queima [ms]', 'Tempo até o pico [ms]']
+    m_teo = _metricas(ref_data)
+    m_exp = _metricas(data)
+    df_comp = pd.DataFrame({
+        'Variável': nomes,
+        'Teórico': [f'{v:.3f}' for v in m_teo],
+        'Experimental': [f'{v:.3f}' for v in m_exp],
+        'Diferença [%]': [
+            f'{(e - t) / t * 100:+.2f}' if t != 0 else '—'
+            for t, e in zip(m_teo, m_exp)
+        ],
+    })
+    st.dataframe(df_comp, hide_index=True, use_container_width=True)
+    st.caption('Diferença percentual em relação à curva teórica: (experimental − teórico) / teórico.')
