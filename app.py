@@ -176,16 +176,28 @@ with col1:
         ))
     fig.update_layout(xaxis_title=xaxis_title, yaxis_title=yaxis_title,
                       legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1))
-    st.plotly_chart(fig, config={
-        'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'zoomIn', 'zoomOut', 'autoScale'],
-        'toImageButtonOptions': {
-            'format': 'png',
-            'filename': f'curva_empuxo_{name}',
-            'width': 600,
-            'height': 500,
-            'template': 'plotly',
-        }
-    }, theme=None)
+    if ref_data is not None:
+        st.plotly_chart(fig, config={
+            'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'zoomIn', 'zoomOut', 'autoScale'],
+            'toImageButtonOptions': {
+                'format': 'png',
+                'filename': f'curva_empuxo_{name}_comp:{modo_norm}',
+                'width': 600,
+                'height': 500,
+                'template': 'plotly',
+            }
+        }, theme=None)
+    else:
+            st.plotly_chart(fig, config={
+            'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'zoomIn', 'zoomOut', 'autoScale'],
+            'toImageButtonOptions': {
+                'format': 'png',
+                'filename': f'curva_empuxo_{name}',
+                'width': 600,
+                'height': 500,
+                'template': 'plotly',
+            }
+        }, theme=None)
 with col2:
     df_stats = pd.DataFrame(
             data_dict
