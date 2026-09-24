@@ -110,41 +110,71 @@ name = st.text_input('Nome do teste:', value=file.name)
 
 # curva teórica (opcional)
 # ------------------------
+UNIDADE_TEMPO_EXP = 'ms'  # unidade de tempo dos dados experimentais (a mesma usada em tempo_queima/tempo_pico)
+
 ref_file = st.file_uploader(
         'Curva teórica (opcional): `.txt`, `.csv` ou `.wsv` com duas colunas '
-        '(tempo [s] e empuxo [N]) separadas por espaço.',
+        '(tempo e empuxo [N]) separadas por espaço.',
         type=['csv', 'txt', 'wsv'], key='curva_teorica')
 
-ref_data = None
+ref_data = None  # curva teórica já convertida para a unidade de tempo do experimento
 if ref_file is not None:
+    unidade_ref = st.selectbox('Unidade de tempo da curva teórica', ['s', 'ms'], index=0)
     try:
         df_ref = formatar_txt(ref_file)  # DataFrame com tempo e valor
         if df_ref.shape[1] < 2:
             raise ValueError('O arquivo precisa ter ao menos duas colunas.')
         # array [tempo, empuxo], mesmo formato usado nas funções de estatística
         ref_data = df_ref.iloc[:, :2].to_numpy(dtype=float)
+        if unidade_ref == 's' and UNIDADE_TEMPO_EXP == 'ms':
+            ref_data[:, 0] = ref_data[:, 0] * 1000  # s -> ms
     except (ValueError, TypeError) as e:
         st.error(f'Não foi possível ler a curva teórica: {e}')
         ref_data = None
 
-# cópia dos dados experimentais para o gráfico (estatísticas usam `data` original)
-data_plot = data.copy()
+t_exp, y_exp = data[:, 0].astype(float), data[:, 1].astype(float)
+xaxis_title = f'Tempo [{UNIDADE_TEMPO_EXP}]'
+yaxis_title = 'Empuxo [N]'
+
 if ref_data is not None:
-    alinhar = st.checkbox('Alinhar início da curva experimental em t = 0 s', value=True)
-    if alinhar:
-        data_plot[:, 0] = data_plot[:, 0] - data_plot[0, 0]
+    t_ref, y_ref = ref_data[:, 0].copy(), ref_data[:, 1].copy()
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        alinhar = st.checkbox('Alinhar início da curva experimental em t = 0', value=True)
+    with col_b:
+        modo_norm = st.selectbox(
+                'Normalização das curvas',
+                ['Nenhuma', 'Empuxo (pico = 1)', 'Empuxo e tempo (comparar forma)'],
+                index=0,
+        )
+
+    if alinhar or modo_norm == 'Empuxo e tempo (comparar forma)':
+        t_exp = t_exp - t_exp[0]
+        t_ref = t_ref - t_ref[0]
+
+    if modo_norm in ('Empuxo (pico = 1)', 'Empuxo e tempo (comparar forma)'):
+        y_exp = y_exp / np.nanmax(y_exp)
+        y_ref = y_ref / np.nanmax(y_ref)
+        yaxis_title = 'Empuxo normalizado'
+
+    if modo_norm == 'Empuxo e tempo (comparar forma)':
+        # tempo de 0 a 1: fração da duração de cada queima
+        t_exp = t_exp / t_exp[-1] if t_exp[-1] != 0 else t_exp
+        t_ref = t_ref / t_ref[-1] if t_ref[-1] != 0 else t_ref
+        xaxis_title = 'Tempo normalizado (fração da queima)'
 
 col1, col2 = st.columns([60,40])
 with col1:
-    fig = px.line(x=data_plot[:, 0], y=data_plot[:, 1], markers=True, title=f'Curva de empuxo {name}', template='plotly_dark')
+    fig = px.line(x=t_exp, y=y_exp, markers=True, title=f'Curva de empuxo {name}', template='plotly_dark')
     fig.update_traces(name='Experimental', showlegend=True)
     if ref_data is not None:
         fig.add_trace(go.Scatter(
-                x=ref_data[:, 0], y=ref_data[:, 1],
+                x=t_ref, y=y_ref,
                 mode='lines+markers', name='Teórica',
                 line=dict(dash='dash'),
         ))
-    fig.update_layout(xaxis_title='Tempo [s]', yaxis_title='Empuxo [N]',
+    fig.update_layout(xaxis_title=xaxis_title, yaxis_title=yaxis_title,
                       legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1))
     st.plotly_chart(fig, config={
         'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'zoomIn', 'zoomOut', 'autoScale'],
@@ -164,7 +194,7 @@ with col2:
     st.plotly_chart(
             fig_table,
             config={
-                'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'autoScale'],
+                'modeBarButtonsToRemove': ['lasso2d', 'select', 'pan', 'zoom', 'zoomIn', 'zoomOut', 'autoScale'],
                 # 'staticPlot': True,
                 'scrollZoom': False,
                 'toImageButtonOptions': {
