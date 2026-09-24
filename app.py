@@ -1,6 +1,8 @@
 import streamlit as st
 from plotly import express as px, figure_factory as ff
+from plotly import graph_objects as go
 import pandas as pd
+import numpy as np
 
 from stats import *
 
@@ -119,7 +121,7 @@ if ref_file is not None:
         df_ref = formatar_txt(ref_file)
         if df_ref.shape[1] < 2:
             raise ValueError('O arquivo deve ter duas colunas.')
-        ref_data = df.ref.iloc[:, :2].to_numpy(dtype=float)
+        ref_data = df_ref.iloc[:, :2].to_numpy(dtype=float)
     except (ValueError, TypeError) as e:
         st.error(f"Não foi possível ler a curva teórica: {e}")
         ref_data = None
