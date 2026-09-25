@@ -113,7 +113,7 @@ name = st.text_input('Nome do teste:', value=file.name)
 UNIDADE_TEMPO_EXP = 'ms'  # unidade de tempo dos dados experimentais (a mesma usada em tempo_queima/tempo_pico)
 
 ref_file = st.file_uploader(
-        'Curva teórica (opcional): `.txt`, `.csv` ou `.wsv` com duas colunas '
+        'Curva teórica (opcional): '
         '(tempo e empuxo [N]) separadas por espaço.',
         type=['csv', 'txt', 'wsv', 'eng'], key='curva_teorica')
 
