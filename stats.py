@@ -1,5 +1,36 @@
 import numpy as np
+import pandas as pd
+import io
 
+def formatar_txt(arquivo):   
+    dados = []
+    
+    conteudo = arquivo.read().decode("utf-8")
+    
+    for linha in conteudo.splitlines():
+        linha = linha.strip()
+        
+        if not linha:
+            continue
+    
+        partes = linha.split()
+        
+        if len(partes) >= 2:
+            try:
+                tempo = float(partes[0])
+                valor = float(partes[1])
+                
+                dados.append((tempo, valor))
+            except ValueError:
+                continue
+    
+    df = pd.DataFrame(dados, columns=["tempo", "valor"])
+    
+    # Formatação
+    df["tempo"] = df["tempo"].round(3)
+    df["valor"] = df["valor"].round(0).astype(int)
+    
+    return df
 
 def calibrar_curva_cel_grande(data: np.ndarray):
     data[:, 0] = data[:, 0] - data[0, 0]  # corrige tempo 0
