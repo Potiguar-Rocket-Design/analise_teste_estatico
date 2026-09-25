@@ -115,7 +115,7 @@ UNIDADE_TEMPO_EXP = 'ms'  # unidade de tempo dos dados experimentais (a mesma us
 ref_file = st.file_uploader(
         'Curva teórica (opcional): `.txt`, `.csv` ou `.wsv` com duas colunas '
         '(tempo e empuxo [N]) separadas por espaço.',
-        type=['csv', 'txt', 'wsv'], key='curva_teorica')
+        type=['csv', 'txt', 'wsv', 'eng'], key='curva_teorica')
 
 ref_data = None  # curva teórica já convertida para a unidade de tempo do experimento
 if ref_file is not None:
